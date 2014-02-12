@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * The module fixes node translation related issues of the Entity Cache module.
+ */
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function node_entitycache_translation_fix_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'node_insert' || $hook == 'node_update') {
+    // Execute this hooks after the translation module.
+    $group = $implementations['node_entitycache_translation_fix'];
+    unset($implementations['node_entitycache_translation_fix']);
+    $implementations['node_entitycache_translation_fix'] = $group;
+  }
+}
+
+
+/**
+ * Implements hook_node_insert().
+ */
+function node_entitycache_translation_fix_node_insert($node) {
+  node_entitycache_translation_fix_node_update($node);
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function node_entitycache_translation_fix_node_update($node) {
+  if (translation_supported_type($node->type)) {
+    $ids = array($node->nid);
+    if (isset($node->tnid)) {
+      $ids[] = $node->tnid;
+    }
+    if (isset($node->translation_source->nid)) {
+      $ids[] = $node->translation_source->nid;
+    }
+    $ids = array_filter(array_unique($ids));
+    if (!empty($ids)) {
+      $ids = db_select('node', 'n')
+        ->condition(
+          db_or()
+            ->condition('n.nid', $ids, 'IN')
+            ->condition('n.tnid', $ids, 'IN')
+        )
+        ->fields('n', array('nid'))
+        ->execute()
+        ->fetchCol();
+      $ids = array_unique($ids);
+      if (!empty($ids)) {
+        entity_get_controller('node')->resetCache($ids);
+      }
+    }
+  }
+}

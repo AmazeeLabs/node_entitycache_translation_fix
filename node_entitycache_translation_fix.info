@@ -1,0 +1,9 @@
+name = Node + Entity Cache + Translation Fix
+description = Fixes node translation related issues of the Entity Cache module.
+core = 7.x
+
+package = Custom
+
+dependencies[] = node
+dependencies[] = translation
+dependencies[] = entitycache
